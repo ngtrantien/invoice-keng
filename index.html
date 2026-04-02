@@ -12,8 +12,6 @@
     --blue-main: #1a6bff;
     --blue-dark: #0f4fd4;
     --blue-light: #3d87ff;
-    --blue-glass: rgba(255,255,255,0.12);
-    --blue-glass-border: rgba(255,255,255,0.22);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,7 +76,8 @@
   #invoice-card {
     width: 780px;
     min-height: 1080px;
-    background: linear-gradient(160deg, #1a6bff 0%, #0f4fd4 60%, #0a3ab8 100%);
+    background-color: #0f4fd4; /* Solid fallback */
+    background-image: linear-gradient(145deg, #1a6bff 0%, #0f4fd4 50%, #0a3ab8 100%);
     border-radius: 24px;
     padding: 44px 48px 0 48px;
     position: relative;
@@ -117,24 +116,12 @@
   }
 
   .logo-block {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center;
   }
-  .logo-icon {
-    width: 44px; height: 44px;
-    background: rgba(255,255,255,0.15);
-    border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .logo-icon svg { width: 26px; height: 26px; }
-  .logo-text {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 900;
-    font-size: 22px;
-    color: #fff;
-    letter-spacing: 0.12em;
-    outline: none;
+  .logo-block img {
+    height: 56px; /* Chỉnh độ lớn logo ở đây */
+    width: auto;
+    object-fit: contain;
   }
 
   .inv-meta { text-align: right; }
@@ -191,6 +178,8 @@
     line-height: 1;
     text-shadow: 0 4px 24px rgba(0,0,0,0.18);
     outline: none;
+    display: block;
+    margin-bottom: 20px; /* Đã ép cứng khoảng cách */
   }
   .inv-service-label {
     font-family: 'Montserrat', sans-serif;
@@ -198,9 +187,9 @@
     font-size: 14px;
     color: rgba(255,255,255,0.8);
     letter-spacing: 0.1em;
-    margin-top: 8px;
     outline: none;
     display: block;
+    margin-bottom: 14px;
   }
   .inv-subtitle {
     font-family: 'Montserrat', sans-serif;
@@ -208,7 +197,6 @@
     font-size: 17px;
     color: #fff;
     letter-spacing: 0.12em;
-    margin-top: 14px;
     outline: none;
     display: block;
   }
@@ -334,7 +322,6 @@
     background: rgba(255,80,80,0.4);
     color: #fff;
   }
-  .export-hide { /* hidden during export */ }
 
   /* Total row */
   .total-row td {
@@ -470,10 +457,7 @@
 
   <div class="inv-header">
     <div class="logo-block">
-      <div class="logo-icon" onclick="changeLogo()" style="cursor: pointer; overflow: hidden;" title="Click để dán link logo mới">
-        <img id="logoImg" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Letter_k.svg/1024px-Letter_k.svg.png" style="width: 100%; height: 100%; object-fit: contain; padding: 4px; filter: brightness(0) invert(1);">
-      </div>
-      <span class="logo-text" contenteditable="true" spellcheck="false">KENG</span>
+      <img id="logoImg" src="https://banhmitattoo.com/wp-content/uploads/2026/04/KenG-Logo@1000x.webp" crossorigin="anonymous">
     </div>
 
     <div class="inv-meta">
@@ -586,18 +570,6 @@
 </div><div style="height:60px"></div>
 
 <script>
-  // ── Thêm hàm thay đổi logo ──
-  function changeLogo() {
-    const url = prompt("Nhập đường link (URL) Logo mới của bạn:", "");
-    if (url) {
-      const img = document.getElementById('logoImg');
-      img.src = url;
-      img.style.filter = "none"; // Bỏ bộ lọc trắng đen mặc định nếu dùng logo màu
-      img.style.padding = "0";
-    }
-  }
-
-  // ── Default rows matching the invoice image ──
   const defaultRows = [
     {
       category: 'CORE',
@@ -649,7 +621,7 @@
     const tr = document.createElement('tr');
     tr.className = 'data-row';
 
-    // Category cell
+    // Category
     const catTd = document.createElement('td');
     catTd.className = 'col-category';
     const catInput = document.createElement('input');
@@ -660,7 +632,7 @@
     catTd.appendChild(catInput);
     tr.appendChild(catTd);
 
-    // Description cell (multi-line textarea)
+    // Description
     const descTd = document.createElement('td');
     descTd.className = 'col-desc';
     const descInput = document.createElement('textarea');
@@ -675,7 +647,7 @@
     descTd.appendChild(descInput);
     tr.appendChild(descTd);
 
-    // Qty cell
+    // Qty
     const qtyTd = document.createElement('td');
     qtyTd.className = 'col-qty';
     const qtyInput = document.createElement('input');
@@ -688,7 +660,7 @@
     qtyTd.appendChild(qtyInput);
     tr.appendChild(qtyTd);
 
-    // Prices cell
+    // Prices
     const priceTd = document.createElement('td');
     priceTd.className = 'col-price';
     priceTd.style.padding = '14px 24px 14px 20px';
@@ -719,7 +691,7 @@
     priceTd.appendChild(priceWrapper);
     tr.appendChild(priceTd);
 
-    // Delete btn cell
+    // Delete btn
     const delTd = document.createElement('td');
     delTd.className = 'export-hide';
     delTd.style.verticalAlign = 'top';
@@ -750,35 +722,48 @@
     const card = document.getElementById('invoice-card');
     const overlay = document.getElementById('loadingOverlay');
 
-    // Hide export-hide elements
     const hideEls = document.querySelectorAll('.export-hide');
     hideEls.forEach(el => el.style.visibility = 'hidden');
+
+    // Tắt tạm thời đổ bóng box-shadow để tránh Canvas bị lỗi ám màu/nhiễu màu
+    const originalShadow = card.style.boxShadow;
+    card.style.boxShadow = 'none';
 
     overlay.classList.add('show');
 
     try {
       const canvas = await html2canvas(card, {
-        scale: 2.5,
+        scale: 2.5, // Tăng độ nét
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
+        allowTaint: false, // Phải set false thì ảnh ngoại tuyến (CORS) mới không làm hư canvas
+        backgroundColor: '#0f4fd4',
         logging: false,
         windowWidth: card.scrollWidth,
         windowHeight: card.scrollHeight,
-        // Thuộc tính này sẽ fix lỗi crop text trên điện thoại hoặc tuỳ trình duyệt
         onclone: function(clonedDoc) {
           const inputs = clonedDoc.querySelectorAll('input, textarea');
           inputs.forEach(el => {
             const div = clonedDoc.createElement('div');
             const computedStyle = clonedDoc.defaultView.getComputedStyle(el);
             
-            // Copy toàn bộ style từ thẻ input/textarea sang thẻ div
             div.style.cssText = computedStyle.cssText;
             div.style.whiteSpace = 'pre-wrap';
             div.style.wordBreak = 'break-word';
             div.style.margin = '0';
             
-            // Xử lý riêng align cho cột Price
+            // Xử lý giữ nguyên khoảng cách cho các tiêu đề để không bị dính vào nhau
+            if (el.classList.contains('inv-big-title')) { 
+              div.style.marginBottom = '20px'; 
+              div.style.display = 'block'; 
+            }
+            if (el.classList.contains('inv-service-label')) { 
+              div.style.marginBottom = '14px'; 
+              div.style.display = 'block'; 
+            }
+            if (el.classList.contains('inv-subtitle')) {
+              div.style.display = 'block'; 
+            }
+
             if(el.style.textAlign) { div.style.textAlign = el.style.textAlign; }
             if(el.classList.contains('price-input')) { div.style.textAlign = 'right'; }
             
@@ -795,7 +780,9 @@
     } catch(e) {
       alert('Export failed: ' + e.message);
     } finally {
+      // Phục hồi lại giao diện sau khi xuất xong
       hideEls.forEach(el => el.style.visibility = '');
+      card.style.boxShadow = originalShadow;
       overlay.classList.remove('show');
     }
   }
