@@ -81,7 +81,7 @@
     border-radius: 24px;
     padding: 44px 48px 0 48px;
     position: relative;
-    overflow: visible; /* Để mây header có thể tràn ra */
+    overflow: visible; 
     box-shadow: 0 24px 80px rgba(10,25,70,0.6);
   }
 
@@ -309,12 +309,18 @@
   }
   .cell-input::placeholder { color: rgba(255,255,255,0.35); }
 
-  /* Đã tối ưu hóa chiều cao để Description và Price thẳng hàng 100% */
   textarea.cell-input {
     resize: none;
     min-height: 26px;
     line-height: 26px; /* Ép cứng chiều cao mỗi dòng */
     overflow: hidden;
+    word-break: break-word; /* Tự động bẻ dòng khi text quá dài không có khoảng trắng */
+    white-space: pre-wrap;
+  }
+
+  /* Price không được rớt dòng, ép giữ nguyên để căn lề phải */
+  textarea.price-input {
+    white-space: nowrap; 
   }
 
   /* Delete row btn */
@@ -402,6 +408,7 @@
     flex: 1;
     padding: 0 24px 20px 24px;
     align-self: flex-end;
+    margin-bottom: 40px; /* Đẩy thông tin chuyển khoản lên cao hơn khoảng 1.5 - 2 dòng */
     position: relative;
     z-index: 2;
   }
@@ -418,9 +425,9 @@
   /* Cloud footer decoration */
   .cloud-footer {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 450px;
+    bottom: -10px; /* Điều chỉnh mây tràn ra góc dưới một chút */
+    right: -20px;  /* Điều chỉnh mây tràn ra góc phải một chút */
+    width: 500px;   /* Tăng kích thước mây để trông "cân" hơn */
     opacity: 0.3;
     pointer-events: none;
     z-index: 1;
@@ -595,7 +602,7 @@
 </div><div style="height:60px"></div>
 
 <script>
-  // Các dòng dữ liệu mặc định (Đã xóa số 0, thay bằng khoảng trống để hiển thị sạch sẽ)
+  // Các dòng dữ liệu mặc định
   const defaultRows = [
     {
       category: 'CORE',
@@ -618,7 +625,7 @@
   ];
 
   function formatVND(num) {
-    if (num === 0) return '0'; // Đảm bảo số 0 được trả về nếu yêu cầu
+    if (num === 0) return '0';
     if (!num) return '';
     return num.toLocaleString('vi-VN').replace(/\./g, '.');
   }
@@ -640,7 +647,6 @@
         total += val * (qty > 1 ? qty : 1);
       });
     });
-    // Ghi số vào ID grandTotal, nhường phần đơn vị lại cho ô span editable
     document.getElementById('grandTotal').textContent = formatVND(total);
   }
 
@@ -659,96 +665,128 @@
     catInput.placeholder = 'CATEGORY';
     catTd.appendChild(catInput);
 
-    // Chuẩn bị khối chứa Price để mô-đun Description có thể gọi tới
+    // 2. Tạo cột chứa danh sách Description
+    const descTd = document.createElement('td');
+    descTd.className = 'col-desc';
+    const descWrapper = document.createElement('div');
+    descWrapper.style.display = 'flex';
+    descWrapper.style.flexDirection = 'column';
+    descWrapper.style.gap = '0'; 
+    descTd.appendChild(descWrapper);
+
+    // 3. Tạo cột chứa danh sách Price (để chạy song song với Description)
     const priceTd = document.createElement('td');
     priceTd.className = 'col-price';
     priceTd.style.padding = '14px 24px 14px 20px';
-
     const priceWrapper = document.createElement('div');
     priceWrapper.style.display = 'flex';
     priceWrapper.style.flexDirection = 'column';
-    priceWrapper.style.gap = '0'; // Đã xóa khoảng cách để song song với text
+    priceWrapper.style.gap = '0';
     priceWrapper.style.alignItems = 'flex-end';
     priceTd.appendChild(priceWrapper);
 
-    // Hàm tạo 1 ô nhập giá nhỏ (sẽ được gọi nhiều lần)
-    function addPriceInput(val) {
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.className = 'cell-input price-input';
-      inp.style.textAlign = 'right';
-      inp.style.width = '110px';
-      inp.style.height = '26px'; // Khớp hoàn toàn với line-height của text
-      inp.style.lineHeight = '26px';
+    // HÀM QUAN TRỌNG: Tạo 1 cặp (1 dòng Description đi kèm 1 dòng Price)
+    function addItemPair(dText, pVal) {
+      // Ô text Description
+      const dInput = document.createElement('textarea');
+      dInput.className = 'cell-input desc-item';
+      dInput.rows = 1;
+      dInput.value = dText || '';
+      dInput.placeholder = 'Item description...';
       
-      // Khởi tạo: nếu truyền rỗng hoặc 0 thì ô input hoàn toàn trống trơn
-      inp.value = (val === 0 || val === '') ? '' : formatVND(val);
-      inp.placeholder = ''; // Không set placeholder mặc định nữa
+      // Ô text Price (Cũng dùng textarea để canh lề trên (top) cho khớp hàng khi text quá dài)
+      const pInput = document.createElement('textarea');
+      pInput.className = 'cell-input price-input';
+      pInput.rows = 1;
+      pInput.style.textAlign = 'right';
+      pInput.style.width = '110px';
+      pInput.style.height = '26px';
+      pInput.style.lineHeight = '26px';
+      pInput.value = (pVal === 0 || pVal === '') ? '' : formatVND(pVal);
 
-      inp.addEventListener('input', () => {
-        const raw = inp.value.replace(/[^\d]/g, '');
-        // Logic mới: Nếu người dùng xóa sạch chữ, giữ nguyên là rỗng. Nếu gõ 0 sẽ hiện 0.
-        if (raw === '') {
-          inp.value = '';
-        } else {
-          const num = parseInt(raw) || 0;
-          inp.value = formatVND(num);
-        }
+      // Hàm đồng bộ chiều cao: Nếu Description rớt 2-3 dòng, Price cũng tự cao theo
+      const syncHeight = () => {
+        dInput.style.height = '26px';
+        pInput.style.height = '26px';
+        const newH = Math.max(dInput.scrollHeight, 26);
+        dInput.style.height = newH + 'px';
+        pInput.style.height = newH + 'px';
+      };
+
+      dInput.addEventListener('input', syncHeight);
+
+      pInput.addEventListener('input', () => {
+        const raw = pInput.value.replace(/[^\d]/g, '');
+        pInput.value = raw === '' ? '' : formatVND(parseInt(raw));
         recalcTotal();
       });
-      priceWrapper.appendChild(inp);
+
+      // Xử lý phím tắt cho trải nghiệm gõ mượt mà
+      const handleKeyDown = (e, currentInput, isPrice) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addItemPair('', ''); // Sinh hàng mới
+          const allD = descWrapper.querySelectorAll('.desc-item');
+          allD[allD.length - 1].focus(); // Tự động focus vào dòng Description mới tạo
+        } else if (e.key === 'Backspace' && currentInput.value === '') {
+          // Xóa hàng nếu đang trống
+          if (descWrapper.children.length > 1) {
+            e.preventDefault();
+            const prev = dInput.previousElementSibling;
+            const prevP = pInput.previousElementSibling;
+            dInput.remove();
+            pInput.remove();
+            if (isPrice && prevP) prevP.focus();
+            else if (prev) prev.focus();
+            recalcTotal();
+          }
+        }
+      };
+
+      dInput.addEventListener('keydown', (e) => handleKeyDown(e, dInput, false));
+      pInput.addEventListener('keydown', (e) => handleKeyDown(e, pInput, true));
+
+      // Hỗ trợ Copy/Paste nhiều dòng cùng lúc
+      dInput.addEventListener('paste', (e) => {
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        if (paste.includes('\n')) {
+          e.preventDefault();
+          const lines = paste.split('\n').map(l => l.trim()).filter(l => l);
+          dInput.value = lines[0];
+          syncHeight();
+          for (let i = 1; i < lines.length; i++) {
+            addItemPair(lines[i], '');
+          }
+        }
+      });
+
+      descWrapper.appendChild(dInput);
+      priceWrapper.appendChild(pInput);
+      
+      // Chạy đồng bộ chiều cao ngay lúc khởi tạo
+      setTimeout(syncHeight, 0);
     }
 
-    // Nạp data mặc định cho Price
-    const priceList = prices && prices.length ? prices : [''];
-    priceList.forEach((p) => addPriceInput(p));
+    // Nạp dữ liệu vào các cặp (Desc - Price)
+    const itemsCount = Math.max(descriptions ? descriptions.length : 1, 1);
+    const priceList = prices && prices.length ? prices : [];
+    for (let i = 0; i < itemsCount; i++) {
+      addItemPair(descriptions[i] || '', priceList[i] !== undefined ? priceList[i] : '');
+    }
 
-    // 2. Description
-    const descTd = document.createElement('td');
-    descTd.className = 'col-desc';
-    const descInput = document.createElement('textarea');
-    descInput.className = 'cell-input';
-    descInput.rows = Math.max(descriptions ? descriptions.length : 1, 1);
-    descInput.value = descriptions ? descriptions.join('\n') : '';
-    descInput.placeholder = 'Description...';
-
-    // BẮT SỰ KIỆN: Tự động thêm/xóa ô Price khi Enter/Xóa dòng
-    descInput.addEventListener('input', () => {
-      const lines = descInput.value.split('\n').length;
-      descInput.rows = Math.max(lines, 1); // Cập nhật chiều cao textarea
-
-      const currentPrices = priceWrapper.querySelectorAll('.price-input');
-      const currentCount = currentPrices.length;
-
-      // Nếu số dòng nhiều hơn số ô Price -> Sinh thêm ô Price mới
-      if (lines > currentCount) {
-        for (let i = currentCount; i < lines; i++) {
-          addPriceInput(''); // Mặc định khi sinh dòng mới là rỗng
-        }
-      } 
-      // Nếu số dòng ít hơn số ô Price -> Xóa bớt ô Price cuối cùng
-      else if (lines < currentCount) {
-        for (let i = currentCount - 1; i >= lines; i--) {
-          currentPrices[i].remove();
-        }
-        recalcTotal();
-      }
-    });
-    descTd.appendChild(descInput);
-
-    // 3. Qty
+    // 4. Qty
     const qtyTd = document.createElement('td');
     qtyTd.className = 'col-qty';
     const qtyInput = document.createElement('input');
     qtyInput.type = 'text';
-    qtyInput.className = 'cell-input';
+    qtyInput.className = 'cell-input qty-input';
     qtyInput.style.textAlign = 'center';
     qtyInput.value = qtyVal || '';
     qtyInput.placeholder = '—';
     qtyInput.addEventListener('input', recalcTotal);
     qtyTd.appendChild(qtyInput);
 
-    // 4. Delete btn
+    // 5. Delete btn
     const delTd = document.createElement('td');
     delTd.className = 'export-hide';
     delTd.style.verticalAlign = 'top';
@@ -760,7 +798,7 @@
     delBtn.onclick = () => { tr.remove(); recalcTotal(); };
     delTd.appendChild(delBtn);
 
-    // Lắp ghép các cột vào dòng theo đúng thứ tự
+    // Gắn tất cả vào Row
     tr.appendChild(catTd);
     tr.appendChild(descTd);
     tr.appendChild(qtyTd);
@@ -775,7 +813,7 @@
     createRow('', [''], '', ['']);
   }
 
-  // Init default rows
+  // Khởi tạo các dòng mặc định
   defaultRows.forEach(r => {
     createRow(r.category, r.descriptions, r.qty, r.prices);
   });
@@ -813,7 +851,6 @@
             div.style.wordBreak = 'break-word';
             div.style.margin = '0';
             
-            // Xử lý giữ nguyên khoảng cách cho các tiêu đề
             if (el.classList.contains('inv-big-title')) { 
               div.style.marginBottom = '20px'; 
               div.style.display = 'block'; 
@@ -826,13 +863,15 @@
               div.style.display = 'block'; 
             }
 
-            // Đồng bộ chiều cao dòng lúc xuất file để không bị lệch hàng
             if (el.tagName === 'TEXTAREA') {
               div.style.lineHeight = '26px';
             }
 
             if(el.style.textAlign) { div.style.textAlign = el.style.textAlign; }
-            if(el.classList.contains('price-input')) { div.style.textAlign = 'right'; }
+            if(el.classList.contains('price-input')) { 
+                div.style.textAlign = 'right'; 
+                div.style.whiteSpace = 'nowrap';
+            }
             
             div.innerText = el.value || el.placeholder || '';
             el.parentNode.replaceChild(div, el);
