@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Generator — KENG Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --blue-main: #1a6bff;
+    --blue-dark: #0f4fd4;
+    --blue-light: #3d87ff;
+    --blue-glass: rgba(255,255,255,0.12);
+    --blue-glass-border: rgba(255,255,255,0.22);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0a1628;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .toolbar h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    flex: 1;
+  }
+  .toolbar h1 span { color: #3d87ff; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s ease;
+  }
+  .btn-add {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.2);
+  }
+  .btn-add:hover { background: rgba(255,255,255,0.18); }
+  .btn-export {
+    background: linear-gradient(135deg, #1a6bff 0%, #00c6ff 100%);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(26,107,255,0.5);
+  }
+  .btn-export:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(26,107,255,0.65); }
+  .btn-export:active { transform: translateY(0); }
+
+  /* ── INVOICE CARD ── */
+  #invoice-card {
+    width: 780px;
+    min-height: 1080px;
+    background: linear-gradient(160deg, #1a6bff 0%, #0f4fd4 60%, #0a3ab8 100%);
+    border-radius: 24px;
+    padding: 44px 48px 0 48px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(10,25,70,0.6);
+  }
+
+  /* Decorative blobs */
+  #invoice-card::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    pointer-events: none;
+  }
+  #invoice-card::after {
+    content: '';
+    position: absolute;
+    bottom: 160px; left: -100px;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  /* ── HEADER ROW ── */
+  .inv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 36px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .logo-block {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 26px; height: 26px; }
+  .logo-text {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    color: #fff;
+    letter-spacing: 0.12em;
+    outline: none;
+  }
+
+  .inv-meta { text-align: right; }
+  .inv-meta-row {
+    display: flex; gap: 32px; justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+  .inv-meta-label {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .inv-meta-value {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    outline: none;
+    display: inline-block;
+  }
+  [contenteditable]:focus {
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+    outline: 2px solid rgba(255,255,255,0.5);
+    padding: 1px 4px;
+  }
+
+  /* ── TITLE SECTION ── */
+  .inv-title-section {
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Cloud wave SVG above INVOICE */
+  .cloud-wave {
+    margin: 0 auto 4px auto;
+    display: block;
+    opacity: 0.55;
+  }
+
+  .inv-big-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 72px;
+    letter-spacing: 0.12em;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    outline: none;
+  }
+  .inv-service-label {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+    outline: none;
+    display: inline-block;
+  }
+  .inv-subtitle {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    color: #fff;
+    letter-spacing: 0.12em;
+    margin-top: 14px;
+    outline: none;
+    display: inline-block;
+  }
+
+  /* ── TABLE CONTAINER ── */
+  .inv-table-container {
+    background: rgba(255,255,255,0.13);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    overflow: hidden;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    border-bottom: 1px solid rgba(255,255,255,0.22);
+  }
+  thead th {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.9);
+    padding: 16px 20px;
+    text-align: left;
+  }
+  thead th:last-child { text-align: right; padding-right: 24px; }
+  thead th.col-qty { text-align: center; width: 80px; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.13);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.05); }
+
+  td {
+    padding: 14px 20px;
+    vertical-align: top;
+  }
+  td.col-category {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: #fff;
+    white-space: nowrap;
+    width: 120px;
+  }
+  td.col-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.65;
+  }
+  td.col-qty {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    text-align: center;
+    width: 80px;
+  }
+  td.col-price {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: #fff;
+    text-align: right;
+    padding-right: 24px;
+    white-space: nowrap;
+  }
+
+  /* Editable cell inputs */
+  .cell-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    width: 100%;
+    padding: 0;
+    line-height: inherit;
+  }
+  .cell-input:focus {
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 2px 5px;
+    margin: -2px -5px;
+    outline: 2px solid rgba(255,255,255,0.45);
+  }
+  .cell-input::placeholder { color: rgba(255,255,255,0.35); }
+
+  textarea.cell-input {
+    resize: none;
+    min-height: 42px;
+  }
+
+  /* Delete row btn */
+  .delete-row-btn {
+    background: rgba(255,80,80,0.2);
+    border: 1px solid rgba(255,100,100,0.3);
+    color: rgba(255,150,150,0.9);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+  .delete-row-btn:hover {
+    background: rgba(255,80,80,0.4);
+    color: #fff;
+  }
+  .export-hide { /* hidden during export */ }
+
+  /* Total row */
+  .total-row td {
+    padding: 18px 24px 18px 20px;
+    border-top: 1.5px solid rgba(255,255,255,0.3);
+  }
+  .total-label {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: #fff;
+    text-align: right;
+    display: block;
+    letter-spacing: 0.04em;
+  }
+  .total-amount {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: #fff;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ── FOOTER ── */
+  .inv-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: 0;
+    padding: 28px 0 0 0;
+    position: relative;
+    z-index: 2;
+    min-height: 200px;
+  }
+
+  .footer-building {
+    width: 240px;
+    height: 160px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    align-self: flex-end;
+    margin-bottom: 20px;
+  }
+  .footer-building svg { width: 100%; height: 100%; }
+
+  .footer-bank {
+    flex: 1;
+    padding: 0 24px 20px 24px;
+    align-self: flex-end;
+  }
+  .footer-bank-line {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.8;
+    outline: none;
+    display: block;
+  }
+
+  /* Bottom wave */
+  .bottom-wave {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 280px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top-color: #3d87ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    letter-spacing: 0.06em;
+  }
+
+  /* Responsive */
+  @media (max-width: 820px) {
+    #invoice-card { width: 100%; min-width: 0; padding: 28px 20px 0; }
+    .toolbar { max-width: 100%; }
+    .inv-big-title { font-size: 48px; }
+    .footer-building { width: 160px; height: 110px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">GENERATING PNG...</div>
+</div>
+
+<!-- Toolbar (outside invoice, never exported) -->
+<div class="toolbar" id="toolbar">
+  <h1>KENG <span>Invoice</span> Generator</h1>
+  <button class="btn btn-add export-hide" id="addRowBtn" onclick="addRow()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    ADD ROW
+  </button>
+  <button class="btn btn-export" onclick="exportPNG()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    DOWNLOAD PNG
+  </button>
+</div>
+
+<!-- ════════════ INVOICE CARD ════════════ -->
+<div id="invoice-card">
+
+  <!-- HEADER -->
+  <div class="inv-header">
+    <div class="logo-block">
+      <div class="logo-icon">
+        <!-- Geometric K logo -->
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="4" height="18" rx="1" fill="white"/>
+          <path d="M8 13 L20 4" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M8 13 L20 22" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text" contenteditable="true" spellcheck="false">KENG</span>
+    </div>
+
+    <div class="inv-meta">
+      <div class="inv-meta-row">
+        <div>
+          <span class="inv-meta-label">Invoice Date</span>
+          <span class="inv-meta-value" contenteditable="true" spellcheck="false" id="invDate">11th Sep 2025</span>
+        </div>
+        <div>
+          <span class="inv-meta-label">Invoice No.</span>
+          <span class="inv-meta-value" contenteditable="true" spellcheck="false" id="invNo">2509007</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TITLE -->
+  <div class="inv-title-section">
+    <!-- Cloud/wave decoration -->
+    <svg class="cloud-wave" width="180" height="38" viewBox="0 0 180 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="90" cy="24" rx="80" ry="14" fill="rgba(255,255,255,0.18)"/>
+      <ellipse cx="60" cy="20" rx="40" ry="12" fill="rgba(255,255,255,0.14)"/>
+      <ellipse cx="126" cy="22" rx="34" ry="10" fill="rgba(255,255,255,0.12)"/>
+      <ellipse cx="90" cy="18" rx="55" ry="10" fill="rgba(255,255,255,0.15)"/>
+    </svg>
+
+    <div class="inv-big-title" contenteditable="true" spellcheck="false">INVOICE</div>
+    <div class="inv-service-label" contenteditable="true" spellcheck="false">For Design Service</div>
+    <div class="inv-subtitle" contenteditable="true" spellcheck="false">VIETNAM INK — WEBSITE — BATCH 01</div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="inv-table-container">
+    <table id="invoiceTable">
+      <thead>
+        <tr>
+          <th style="width:120px">Category</th>
+          <th>Description</th>
+          <th class="col-qty">Qty</th>
+          <th style="text-align:right;padding-right:24px">Price</th>
+          <th class="export-hide" style="width:50px"></th>
+        </tr>
+      </thead>
+      <tbody id="invoiceBody">
+        <!-- Rows inserted by JS -->
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3"></td>
+          <td style="text-align:right;padding-right:24px">
+            <span class="total-label">Total</span>
+            <span class="total-amount" id="grandTotal">0 VNĐ</span>
+          </td>
+          <td class="export-hide"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="inv-footer">
+    <!-- Architectural building illustration -->
+    <div class="footer-building">
+      <svg viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="240" height="160" fill="rgba(255,255,255,0.08)"/>
+        <!-- Sky gradient -->
+        <defs>
+          <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="160" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#1a6bff" stop-opacity="0.1"/>
+          </linearGradient>
+          <linearGradient id="bldG" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.1)"/>
+          </linearGradient>
+        </defs>
+        <rect width="240" height="160" fill="url(#skyG)"/>
+        <!-- Main building -->
+        <rect x="50" y="40" width="100" height="120" fill="url(#bldG)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+        <!-- Side building -->
+        <rect x="148" y="70" width="60" height="90" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <!-- Windows main -->
+        <rect x="62" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.3)"/>
+        <rect x="82" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.15)"/>
+        <rect x="102" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.3)"/>
+        <rect x="122" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.2)"/>
+        <rect x="62" y="78" width="14" height="18" rx="1" fill="rgba(255,255,255,0.2)"/>
+        <rect x="82" y="78" width="14" height="18" rx="1" fill="rgba(255,255,255,0.35)"/>
+        <rect x="102" y="78" width="14" height="18" rx="1" fill="rgba(255,255,255,0.15)"/>
+        <rect x="122" y="78" width="14" height="18" rx="1" fill="rgba(255,255,255,0.3)"/>
+        <rect x="62" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.3)"/>
+        <rect x="82" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.18)"/>
+        <rect x="102" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.28)"/>
+        <rect x="122" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.15)"/>
+        <!-- Windows side -->
+        <rect x="156" y="82" width="10" height="14" rx="1" fill="rgba(255,255,255,0.25)"/>
+        <rect x="172" y="82" width="10" height="14" rx="1" fill="rgba(255,255,255,0.15)"/>
+        <rect x="156" y="102" width="10" height="14" rx="1" fill="rgba(255,255,255,0.2)"/>
+        <rect x="172" y="102" width="10" height="14" rx="1" fill="rgba(255,255,255,0.3)"/>
+        <!-- Diagonal lines decoration -->
+        <line x1="0" y1="0" x2="240" y2="160" stroke="rgba(255,255,255,0.06)" stroke-width="24"/>
+        <line x1="-40" y1="0" x2="200" y2="160" stroke="rgba(255,255,255,0.04)" stroke-width="20"/>
+        <!-- Ground line -->
+        <rect x="0" y="155" width="240" height="5" fill="rgba(255,255,255,0.15)"/>
+      </svg>
+    </div>
+
+    <!-- Bank details -->
+    <div class="footer-bank">
+      <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankName">Techcombank</span>
+      <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankAccount">6797936868</span>
+      <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankHolder">Nguyen Tran Tien</span>
+    </div>
+
+    <!-- Bottom wave decoration -->
+    <svg class="bottom-wave" viewBox="0 0 280 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="200" cy="120" rx="140" ry="80" fill="rgba(0,198,255,0.35)"/>
+      <ellipse cx="240" cy="150" rx="100" ry="60" fill="rgba(0,198,255,0.25)"/>
+      <ellipse cx="180" cy="140" rx="80" ry="50" fill="rgba(255,255,255,0.08)"/>
+    </svg>
+  </div>
+
+  <!-- Bottom padding spacer -->
+  <div style="height:40px"></div>
+
+</div><!-- /invoice-card -->
+
+<div style="height:60px"></div>
+
+<script>
+  // ── Default rows matching the invoice image ──
+  const defaultRows = [
+    {
+      category: 'CORE',
+      descriptions: ['Logo System', 'Color & Type', 'Mini Guideline'],
+      qty: '',
+      prices: [9500000, 0, 0]
+    },
+    {
+      category: 'SOCIAL',
+      descriptions: ['Avatar & Cover Pack', 'Template Basic', 'Icon Highlight Covers', 'Aftercare'],
+      qty: '',
+      prices: [500000, 500000, 500000, 500000]
+    },
+    {
+      category: 'OFFICE',
+      descriptions: ['Business Card', 'Consent Form', 'Aftercare', 'A4 Paper Water Mark'],
+      qty: '',
+      prices: [500000, 250000, 0, 0]
+    }
+  ];
+
+  function formatVND(num) {
+    if (!num && num !== 0) return '0';
+    return num.toLocaleString('vi-VN').replace(/\./g, '.');
+  }
+
+  function parsePrice(val) {
+    const clean = String(val).replace(/[^\d]/g, '');
+    return parseInt(clean) || 0;
+  }
+
+  function recalcTotal() {
+    const tbody = document.getElementById('invoiceBody');
+    const rows = tbody.querySelectorAll('tr.data-row');
+    let total = 0;
+    rows.forEach(row => {
+      const prices = row.querySelectorAll('.price-input');
+      const qty = parsePrice(row.querySelector('.qty-input')?.value || '1') || 1;
+      prices.forEach(p => {
+        const val = parsePrice(p.value);
+        total += val * (qty > 1 ? qty : 1);
+      });
+    });
+    document.getElementById('grandTotal').textContent = formatVND(total) + ' VNĐ';
+  }
+
+  function createRow(catVal, descriptions, qtyVal, prices) {
+    const tbody = document.getElementById('invoiceBody');
+    const tr = document.createElement('tr');
+    tr.className = 'data-row';
+
+    // Category cell
+    const catTd = document.createElement('td');
+    catTd.className = 'col-category';
+    const catInput = document.createElement('input');
+    catInput.type = 'text';
+    catInput.className = 'cell-input';
+    catInput.value = catVal || '';
+    catInput.placeholder = 'CATEGORY';
+    catTd.appendChild(catInput);
+    tr.appendChild(catTd);
+
+    // Description cell (multi-line textarea)
+    const descTd = document.createElement('td');
+    descTd.className = 'col-desc';
+    const descInput = document.createElement('textarea');
+    descInput.className = 'cell-input';
+    descInput.rows = Math.max(descriptions ? descriptions.length : 1, 1);
+    descInput.value = descriptions ? descriptions.join('\n') : '';
+    descInput.placeholder = 'Description...';
+    descInput.addEventListener('input', () => {
+      const lines = descInput.value.split('\n').length;
+      descInput.rows = Math.max(lines, 1);
+    });
+    descTd.appendChild(descInput);
+    tr.appendChild(descTd);
+
+    // Qty cell
+    const qtyTd = document.createElement('td');
+    qtyTd.className = 'col-qty';
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'text';
+    qtyInput.className = 'cell-input';
+    qtyInput.style.textAlign = 'center';
+    qtyInput.value = qtyVal || '';
+    qtyInput.placeholder = '—';
+    qtyInput.addEventListener('input', recalcTotal);
+    qtyTd.appendChild(qtyInput);
+    tr.appendChild(qtyTd);
+
+    // Prices cell
+    const priceTd = document.createElement('td');
+    priceTd.className = 'col-price';
+    priceTd.style.padding = '14px 24px 14px 20px';
+
+    const priceWrapper = document.createElement('div');
+    priceWrapper.style.display = 'flex';
+    priceWrapper.style.flexDirection = 'column';
+    priceWrapper.style.gap = '2px';
+    priceWrapper.style.alignItems = 'flex-end';
+
+    const priceList = prices && prices.length ? prices : [0];
+    priceList.forEach((p, i) => {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'cell-input price-input';
+      inp.style.textAlign = 'right';
+      inp.style.width = '110px';
+      inp.value = p > 0 ? formatVND(p) : (i === 0 ? '' : '0');
+      inp.placeholder = '0';
+      inp.addEventListener('input', () => {
+        const raw = inp.value.replace(/[^\d]/g, '');
+        const num = parseInt(raw) || 0;
+        if (raw) inp.value = formatVND(num);
+        recalcTotal();
+      });
+      priceWrapper.appendChild(inp);
+    });
+    priceTd.appendChild(priceWrapper);
+    tr.appendChild(priceTd);
+
+    // Delete btn cell
+    const delTd = document.createElement('td');
+    delTd.className = 'export-hide';
+    delTd.style.verticalAlign = 'top';
+    delTd.style.paddingTop = '16px';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-row-btn export-hide';
+    delBtn.textContent = '✕';
+    delBtn.title = 'Delete row';
+    delBtn.onclick = () => { tr.remove(); recalcTotal(); };
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+
+    tbody.appendChild(tr);
+    recalcTotal();
+  }
+
+  function addRow() {
+    createRow('', [''], '', [0]);
+  }
+
+  // Init default rows
+  defaultRows.forEach(r => {
+    createRow(r.category, r.descriptions, r.qty, r.prices);
+  });
+
+  // ── Export PNG ──
+  async function exportPNG() {
+    const card = document.getElementById('invoice-card');
+    const overlay = document.getElementById('loadingOverlay');
+
+    // Hide export-hide elements
+    const hideEls = document.querySelectorAll('.export-hide');
+    hideEls.forEach(el => el.style.visibility = 'hidden');
+
+    overlay.classList.add('show');
+
+    try {
+      const canvas = await html2canvas(card, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false,
+        windowWidth: card.scrollWidth,
+        windowHeight: card.scrollHeight
+      });
+
+      const link = document.createElement('a');
+      link.download = 'KENG-Invoice-' + (document.getElementById('invNo').textContent.trim() || 'export') + '.png';
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    } catch(e) {
+      alert('Export failed: ' + e.message);
+    } finally {
+      hideEls.forEach(el => el.style.visibility = '');
+      overlay.classList.remove('show');
+    }
+  }
+</script>
+</body>
+</html>
