@@ -200,7 +200,7 @@
     letter-spacing: 0.1em;
     margin-top: 8px;
     outline: none;
-    display: inline-block;
+    display: block;
   }
   .inv-subtitle {
     font-family: 'Montserrat', sans-serif;
@@ -210,7 +210,7 @@
     letter-spacing: 0.12em;
     margin-top: 14px;
     outline: none;
-    display: inline-block;
+    display: block;
   }
 
   /* ── TABLE CONTAINER ── */
@@ -449,13 +449,11 @@
 </head>
 <body>
 
-<!-- Loading overlay -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <div class="loading-text">GENERATING PNG...</div>
 </div>
 
-<!-- Toolbar (outside invoice, never exported) -->
 <div class="toolbar" id="toolbar">
   <h1>KENG <span>Invoice</span> Generator</h1>
   <button class="btn btn-add export-hide" id="addRowBtn" onclick="addRow()">
@@ -468,19 +466,12 @@
   </button>
 </div>
 
-<!-- ════════════ INVOICE CARD ════════════ -->
 <div id="invoice-card">
 
-  <!-- HEADER -->
   <div class="inv-header">
     <div class="logo-block">
-      <div class="logo-icon">
-        <!-- Geometric K logo -->
-        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="4" width="4" height="18" rx="1" fill="white"/>
-          <path d="M8 13 L20 4" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
-          <path d="M8 13 L20 22" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
-        </svg>
+      <div class="logo-icon" onclick="changeLogo()" style="cursor: pointer; overflow: hidden;" title="Click để dán link logo mới">
+        <img id="logoImg" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Letter_k.svg/1024px-Letter_k.svg.png" style="width: 100%; height: 100%; object-fit: contain; padding: 4px; filter: brightness(0) invert(1);">
       </div>
       <span class="logo-text" contenteditable="true" spellcheck="false">KENG</span>
     </div>
@@ -499,9 +490,7 @@
     </div>
   </div>
 
-  <!-- TITLE -->
   <div class="inv-title-section">
-    <!-- Cloud/wave decoration -->
     <svg class="cloud-wave" width="180" height="38" viewBox="0 0 180 38" fill="none" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="90" cy="24" rx="80" ry="14" fill="rgba(255,255,255,0.18)"/>
       <ellipse cx="60" cy="20" rx="40" ry="12" fill="rgba(255,255,255,0.14)"/>
@@ -514,7 +503,6 @@
     <div class="inv-subtitle" contenteditable="true" spellcheck="false">VIETNAM INK — WEBSITE — BATCH 01</div>
   </div>
 
-  <!-- TABLE -->
   <div class="inv-table-container">
     <table id="invoiceTable">
       <thead>
@@ -527,8 +515,7 @@
         </tr>
       </thead>
       <tbody id="invoiceBody">
-        <!-- Rows inserted by JS -->
-      </tbody>
+        </tbody>
       <tfoot>
         <tr class="total-row">
           <td colspan="3"></td>
@@ -542,13 +529,10 @@
     </table>
   </div>
 
-  <!-- FOOTER -->
   <div class="inv-footer">
-    <!-- Architectural building illustration -->
     <div class="footer-building">
       <svg viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="240" height="160" fill="rgba(255,255,255,0.08)"/>
-        <!-- Sky gradient -->
         <defs>
           <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="160" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.4"/>
@@ -560,11 +544,8 @@
           </linearGradient>
         </defs>
         <rect width="240" height="160" fill="url(#skyG)"/>
-        <!-- Main building -->
         <rect x="50" y="40" width="100" height="120" fill="url(#bldG)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-        <!-- Side building -->
         <rect x="148" y="70" width="60" height="90" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-        <!-- Windows main -->
         <rect x="62" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.3)"/>
         <rect x="82" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.15)"/>
         <rect x="102" y="52" width="14" height="18" rx="1" fill="rgba(255,255,255,0.3)"/>
@@ -577,27 +558,22 @@
         <rect x="82" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.18)"/>
         <rect x="102" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.28)"/>
         <rect x="122" y="104" width="14" height="18" rx="1" fill="rgba(255,255,255,0.15)"/>
-        <!-- Windows side -->
         <rect x="156" y="82" width="10" height="14" rx="1" fill="rgba(255,255,255,0.25)"/>
         <rect x="172" y="82" width="10" height="14" rx="1" fill="rgba(255,255,255,0.15)"/>
         <rect x="156" y="102" width="10" height="14" rx="1" fill="rgba(255,255,255,0.2)"/>
         <rect x="172" y="102" width="10" height="14" rx="1" fill="rgba(255,255,255,0.3)"/>
-        <!-- Diagonal lines decoration -->
         <line x1="0" y1="0" x2="240" y2="160" stroke="rgba(255,255,255,0.06)" stroke-width="24"/>
         <line x1="-40" y1="0" x2="200" y2="160" stroke="rgba(255,255,255,0.04)" stroke-width="20"/>
-        <!-- Ground line -->
         <rect x="0" y="155" width="240" height="5" fill="rgba(255,255,255,0.15)"/>
       </svg>
     </div>
 
-    <!-- Bank details -->
     <div class="footer-bank">
       <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankName">Techcombank</span>
       <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankAccount">6797936868</span>
       <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankHolder">Nguyen Tran Tien</span>
     </div>
 
-    <!-- Bottom wave decoration -->
     <svg class="bottom-wave" viewBox="0 0 280 160" fill="none" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="200" cy="120" rx="140" ry="80" fill="rgba(0,198,255,0.35)"/>
       <ellipse cx="240" cy="150" rx="100" ry="60" fill="rgba(0,198,255,0.25)"/>
@@ -605,14 +581,22 @@
     </svg>
   </div>
 
-  <!-- Bottom padding spacer -->
   <div style="height:40px"></div>
 
-</div><!-- /invoice-card -->
-
-<div style="height:60px"></div>
+</div><div style="height:60px"></div>
 
 <script>
+  // ── Thêm hàm thay đổi logo ──
+  function changeLogo() {
+    const url = prompt("Nhập đường link (URL) Logo mới của bạn:", "");
+    if (url) {
+      const img = document.getElementById('logoImg');
+      img.src = url;
+      img.style.filter = "none"; // Bỏ bộ lọc trắng đen mặc định nếu dùng logo màu
+      img.style.padding = "0";
+    }
+  }
+
   // ── Default rows matching the invoice image ──
   const defaultRows = [
     {
@@ -780,7 +764,28 @@
         backgroundColor: null,
         logging: false,
         windowWidth: card.scrollWidth,
-        windowHeight: card.scrollHeight
+        windowHeight: card.scrollHeight,
+        // Thuộc tính này sẽ fix lỗi crop text trên điện thoại hoặc tuỳ trình duyệt
+        onclone: function(clonedDoc) {
+          const inputs = clonedDoc.querySelectorAll('input, textarea');
+          inputs.forEach(el => {
+            const div = clonedDoc.createElement('div');
+            const computedStyle = clonedDoc.defaultView.getComputedStyle(el);
+            
+            // Copy toàn bộ style từ thẻ input/textarea sang thẻ div
+            div.style.cssText = computedStyle.cssText;
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordBreak = 'break-word';
+            div.style.margin = '0';
+            
+            // Xử lý riêng align cho cột Price
+            if(el.style.textAlign) { div.style.textAlign = el.style.textAlign; }
+            if(el.classList.contains('price-input')) { div.style.textAlign = 'right'; }
+            
+            div.innerText = el.value || el.placeholder || '';
+            el.parentNode.replaceChild(div, el);
+          });
+        }
       });
 
       const link = document.createElement('a');
