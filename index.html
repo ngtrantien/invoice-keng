@@ -356,8 +356,18 @@
     font-weight: 800;
     font-size: 20px;
     color: #fff;
-    display: block;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
     margin-top: 2px;
+  }
+  #currencyUnit {
+    outline: none;
+  }
+  #currencyUnit:focus {
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.45);
   }
 
   /* ── FOOTER ── */
@@ -521,7 +531,10 @@
           <td colspan="3"></td>
           <td style="text-align:right;padding-right:24px">
             <span class="total-label">Total</span>
-            <span class="total-amount" id="grandTotal">0 VNĐ</span>
+            <div class="total-amount">
+              <span id="grandTotal">0</span>
+              <span id="currencyUnit" contenteditable="true" spellcheck="false">VNĐ</span>
+            </div>
           </td>
           <td class="export-hide"></td>
         </tr>
@@ -582,12 +595,13 @@
 </div><div style="height:60px"></div>
 
 <script>
+  // Các dòng dữ liệu mặc định (Đã xóa số 0, thay bằng khoảng trống để hiển thị sạch sẽ)
   const defaultRows = [
     {
       category: 'CORE',
       descriptions: ['Logo System', 'Color & Type', 'Mini Guideline'],
       qty: '',
-      prices: [9500000, 0, 0]
+      prices: [9500000, '', '']
     },
     {
       category: 'SOCIAL',
@@ -599,12 +613,13 @@
       category: 'OFFICE',
       descriptions: ['Business Card', 'Consent Form', 'Aftercare', 'A4 Paper Water Mark'],
       qty: '',
-      prices: [500000, 250000, 0, 0]
+      prices: [500000, 250000, '', '']
     }
   ];
 
   function formatVND(num) {
-    if (!num && num !== 0) return '0';
+    if (num === 0) return '0'; // Đảm bảo số 0 được trả về nếu yêu cầu
+    if (!num) return '';
     return num.toLocaleString('vi-VN').replace(/\./g, '.');
   }
 
@@ -625,7 +640,8 @@
         total += val * (qty > 1 ? qty : 1);
       });
     });
-    document.getElementById('grandTotal').textContent = formatVND(total) + ' VNĐ';
+    // Ghi số vào ID grandTotal, nhường phần đơn vị lại cho ô span editable
+    document.getElementById('grandTotal').textContent = formatVND(total);
   }
 
   function createRow(catVal, descriptions, qtyVal, prices) {
@@ -656,7 +672,7 @@
     priceTd.appendChild(priceWrapper);
 
     // Hàm tạo 1 ô nhập giá nhỏ (sẽ được gọi nhiều lần)
-    function addPriceInput(val, isFirst) {
+    function addPriceInput(val) {
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.className = 'cell-input price-input';
@@ -664,20 +680,28 @@
       inp.style.width = '110px';
       inp.style.height = '26px'; // Khớp hoàn toàn với line-height của text
       inp.style.lineHeight = '26px';
-      inp.value = val > 0 ? formatVND(val) : (isFirst ? '' : '0');
-      inp.placeholder = '0';
+      
+      // Khởi tạo: nếu truyền rỗng hoặc 0 thì ô input hoàn toàn trống trơn
+      inp.value = (val === 0 || val === '') ? '' : formatVND(val);
+      inp.placeholder = ''; // Không set placeholder mặc định nữa
+
       inp.addEventListener('input', () => {
         const raw = inp.value.replace(/[^\d]/g, '');
-        const num = parseInt(raw) || 0;
-        if (raw) inp.value = formatVND(num);
+        // Logic mới: Nếu người dùng xóa sạch chữ, giữ nguyên là rỗng. Nếu gõ 0 sẽ hiện 0.
+        if (raw === '') {
+          inp.value = '';
+        } else {
+          const num = parseInt(raw) || 0;
+          inp.value = formatVND(num);
+        }
         recalcTotal();
       });
       priceWrapper.appendChild(inp);
     }
 
     // Nạp data mặc định cho Price
-    const priceList = prices && prices.length ? prices : [0];
-    priceList.forEach((p, i) => addPriceInput(p, i === 0 && !p));
+    const priceList = prices && prices.length ? prices : [''];
+    priceList.forEach((p) => addPriceInput(p));
 
     // 2. Description
     const descTd = document.createElement('td');
@@ -699,7 +723,7 @@
       // Nếu số dòng nhiều hơn số ô Price -> Sinh thêm ô Price mới
       if (lines > currentCount) {
         for (let i = currentCount; i < lines; i++) {
-          addPriceInput(0, false);
+          addPriceInput(''); // Mặc định khi sinh dòng mới là rỗng
         }
       } 
       // Nếu số dòng ít hơn số ô Price -> Xóa bớt ô Price cuối cùng
@@ -748,7 +772,7 @@
   }
 
   function addRow() {
-    createRow('', [''], '', [0]);
+    createRow('', [''], '', ['']);
   }
 
   // Init default rows
