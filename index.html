@@ -81,7 +81,7 @@
     border-radius: 24px;
     padding: 44px 48px 0 48px;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Để mây header có thể tràn ra */
     box-shadow: 0 24px 80px rgba(10,25,70,0.6);
   }
 
@@ -94,6 +94,7 @@
     border-radius: 50%;
     background: rgba(255,255,255,0.06);
     pointer-events: none;
+    z-index: 1;
   }
   #invoice-card::after {
     content: '';
@@ -103,6 +104,7 @@
     border-radius: 50%;
     background: rgba(255,255,255,0.04);
     pointer-events: none;
+    z-index: 1;
   }
 
   /* ── HEADER ROW ── */
@@ -119,7 +121,7 @@
     display: flex; align-items: center;
   }
   .logo-block img {
-    height: 56px; /* Chỉnh độ lớn logo ở đây */
+    height: 56px;
     width: auto;
     object-fit: contain;
   }
@@ -160,13 +162,18 @@
     margin-bottom: 32px;
     position: relative;
     z-index: 2;
+    overflow: visible;
   }
 
-  /* Cloud wave SVG above INVOICE */
-  .cloud-wave {
-    margin: 0 auto 4px auto;
-    display: block;
-    opacity: 0.55;
+  /* Cloud header decoration */
+  .cloud-header {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    width: 100%;
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: 1;
   }
 
   .inv-big-title {
@@ -179,7 +186,9 @@
     text-shadow: 0 4px 24px rgba(0,0,0,0.18);
     outline: none;
     display: block;
-    margin-bottom: 20px; /* Đã ép cứng khoảng cách */
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
   }
   .inv-service-label {
     font-family: 'Montserrat', sans-serif;
@@ -190,6 +199,8 @@
     outline: none;
     display: block;
     margin-bottom: 14px;
+    position: relative;
+    z-index: 2;
   }
   .inv-subtitle {
     font-family: 'Montserrat', sans-serif;
@@ -199,6 +210,8 @@
     letter-spacing: 0.12em;
     outline: none;
     display: block;
+    position: relative;
+    z-index: 2;
   }
 
   /* ── TABLE CONTAINER ── */
@@ -356,6 +369,7 @@
     position: relative;
     z-index: 2;
     min-height: 200px;
+    overflow: visible;
   }
 
   .footer-building {
@@ -369,6 +383,7 @@
     position: relative;
     align-self: flex-end;
     margin-bottom: 20px;
+    z-index: 2;
   }
   .footer-building svg { width: 100%; height: 100%; }
 
@@ -376,6 +391,8 @@
     flex: 1;
     padding: 0 24px 20px 24px;
     align-self: flex-end;
+    position: relative;
+    z-index: 2;
   }
   .footer-bank-line {
     font-family: 'Montserrat', sans-serif;
@@ -387,13 +404,15 @@
     display: block;
   }
 
-  /* Bottom wave */
-  .bottom-wave {
+  /* Cloud footer decoration */
+  .cloud-footer {
     position: absolute;
-    bottom: 0; right: 0;
-    width: 280px;
-    opacity: 0.35;
+    bottom: 0;
+    right: 0;
+    width: 450px;
+    opacity: 0.3;
     pointer-events: none;
+    z-index: 1;
   }
 
   /* Loading overlay */
@@ -427,10 +446,11 @@
 
   /* Responsive */
   @media (max-width: 820px) {
-    #invoice-card { width: 100%; min-width: 0; padding: 28px 20px 0; }
+    #invoice-card { width: 100%; min-width: 0; padding: 28px 20px 0; overflow: hidden; }
     .toolbar { max-width: 100%; }
     .inv-big-title { font-size: 48px; }
     .footer-building { width: 160px; height: 110px; }
+    .cloud-header, .cloud-footer { display: none; } /* Ẩn mây trên thiết bị di động để giữ sạch */
   }
 </style>
 </head>
@@ -457,7 +477,7 @@
 
   <div class="inv-header">
     <div class="logo-block">
-      <img id="logoImg" src="https://banhmitattoo.com/wp-content/uploads/2026/04/KenG-Logo@1000x.webp" crossorigin="anonymous">
+      <img id="logoImg" src="KenG-Logo@1000x.webp">
     </div>
 
     <div class="inv-meta">
@@ -475,12 +495,7 @@
   </div>
 
   <div class="inv-title-section">
-    <svg class="cloud-wave" width="180" height="38" viewBox="0 0 180 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="90" cy="24" rx="80" ry="14" fill="rgba(255,255,255,0.18)"/>
-      <ellipse cx="60" cy="20" rx="40" ry="12" fill="rgba(255,255,255,0.14)"/>
-      <ellipse cx="126" cy="22" rx="34" ry="10" fill="rgba(255,255,255,0.12)"/>
-      <ellipse cx="90" cy="18" rx="55" ry="10" fill="rgba(255,255,255,0.15)"/>
-    </svg>
+    <img src="may-header.png" class="cloud-header">
 
     <div class="inv-big-title" contenteditable="true" spellcheck="false">INVOICE</div>
     <div class="inv-service-label" contenteditable="true" spellcheck="false">For Design Service</div>
@@ -558,11 +573,7 @@
       <span class="footer-bank-line" contenteditable="true" spellcheck="false" id="bankHolder">Nguyen Tran Tien</span>
     </div>
 
-    <svg class="bottom-wave" viewBox="0 0 280 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="200" cy="120" rx="140" ry="80" fill="rgba(0,198,255,0.35)"/>
-      <ellipse cx="240" cy="150" rx="100" ry="60" fill="rgba(0,198,255,0.25)"/>
-      <ellipse cx="180" cy="140" rx="80" ry="50" fill="rgba(255,255,255,0.08)"/>
-    </svg>
+    <img src="may-footer.png" class="cloud-footer">
   </div>
 
   <div style="height:40px"></div>
