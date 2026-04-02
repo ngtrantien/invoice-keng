@@ -270,7 +270,6 @@
   td.col-desc {
     font-size: 13px;
     color: rgba(255,255,255,0.85);
-    line-height: 1.65;
   }
   td.col-qty {
     font-size: 13px;
@@ -300,7 +299,6 @@
     letter-spacing: inherit;
     width: 100%;
     padding: 0;
-    line-height: inherit;
   }
   .cell-input:focus {
     background: rgba(255,255,255,0.12);
@@ -311,9 +309,12 @@
   }
   .cell-input::placeholder { color: rgba(255,255,255,0.35); }
 
+  /* Đã tối ưu hóa chiều cao để Description và Price thẳng hàng 100% */
   textarea.cell-input {
     resize: none;
-    min-height: 42px;
+    min-height: 26px;
+    line-height: 26px; /* Ép cứng chiều cao mỗi dòng */
+    overflow: hidden;
   }
 
   /* Delete row btn */
@@ -450,7 +451,7 @@
     .toolbar { max-width: 100%; }
     .inv-big-title { font-size: 48px; }
     .footer-building { width: 160px; height: 110px; }
-    .cloud-header, .cloud-footer { display: none; } /* Ẩn mây trên thiết bị di động để giữ sạch */
+    .cloud-header, .cloud-footer { display: none; }
   }
 </style>
 </head>
@@ -632,7 +633,7 @@
     const tr = document.createElement('tr');
     tr.className = 'data-row';
 
-    // Category
+    // 1. Category
     const catTd = document.createElement('td');
     catTd.className = 'col-category';
     const catInput = document.createElement('input');
@@ -641,9 +642,44 @@
     catInput.value = catVal || '';
     catInput.placeholder = 'CATEGORY';
     catTd.appendChild(catInput);
-    tr.appendChild(catTd);
 
-    // Description
+    // Chuẩn bị khối chứa Price để mô-đun Description có thể gọi tới
+    const priceTd = document.createElement('td');
+    priceTd.className = 'col-price';
+    priceTd.style.padding = '14px 24px 14px 20px';
+
+    const priceWrapper = document.createElement('div');
+    priceWrapper.style.display = 'flex';
+    priceWrapper.style.flexDirection = 'column';
+    priceWrapper.style.gap = '0'; // Đã xóa khoảng cách để song song với text
+    priceWrapper.style.alignItems = 'flex-end';
+    priceTd.appendChild(priceWrapper);
+
+    // Hàm tạo 1 ô nhập giá nhỏ (sẽ được gọi nhiều lần)
+    function addPriceInput(val, isFirst) {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'cell-input price-input';
+      inp.style.textAlign = 'right';
+      inp.style.width = '110px';
+      inp.style.height = '26px'; // Khớp hoàn toàn với line-height của text
+      inp.style.lineHeight = '26px';
+      inp.value = val > 0 ? formatVND(val) : (isFirst ? '' : '0');
+      inp.placeholder = '0';
+      inp.addEventListener('input', () => {
+        const raw = inp.value.replace(/[^\d]/g, '');
+        const num = parseInt(raw) || 0;
+        if (raw) inp.value = formatVND(num);
+        recalcTotal();
+      });
+      priceWrapper.appendChild(inp);
+    }
+
+    // Nạp data mặc định cho Price
+    const priceList = prices && prices.length ? prices : [0];
+    priceList.forEach((p, i) => addPriceInput(p, i === 0 && !p));
+
+    // 2. Description
     const descTd = document.createElement('td');
     descTd.className = 'col-desc';
     const descInput = document.createElement('textarea');
@@ -651,14 +687,32 @@
     descInput.rows = Math.max(descriptions ? descriptions.length : 1, 1);
     descInput.value = descriptions ? descriptions.join('\n') : '';
     descInput.placeholder = 'Description...';
+
+    // BẮT SỰ KIỆN: Tự động thêm/xóa ô Price khi Enter/Xóa dòng
     descInput.addEventListener('input', () => {
       const lines = descInput.value.split('\n').length;
-      descInput.rows = Math.max(lines, 1);
+      descInput.rows = Math.max(lines, 1); // Cập nhật chiều cao textarea
+
+      const currentPrices = priceWrapper.querySelectorAll('.price-input');
+      const currentCount = currentPrices.length;
+
+      // Nếu số dòng nhiều hơn số ô Price -> Sinh thêm ô Price mới
+      if (lines > currentCount) {
+        for (let i = currentCount; i < lines; i++) {
+          addPriceInput(0, false);
+        }
+      } 
+      // Nếu số dòng ít hơn số ô Price -> Xóa bớt ô Price cuối cùng
+      else if (lines < currentCount) {
+        for (let i = currentCount - 1; i >= lines; i--) {
+          currentPrices[i].remove();
+        }
+        recalcTotal();
+      }
     });
     descTd.appendChild(descInput);
-    tr.appendChild(descTd);
 
-    // Qty
+    // 3. Qty
     const qtyTd = document.createElement('td');
     qtyTd.className = 'col-qty';
     const qtyInput = document.createElement('input');
@@ -669,40 +723,8 @@
     qtyInput.placeholder = '—';
     qtyInput.addEventListener('input', recalcTotal);
     qtyTd.appendChild(qtyInput);
-    tr.appendChild(qtyTd);
 
-    // Prices
-    const priceTd = document.createElement('td');
-    priceTd.className = 'col-price';
-    priceTd.style.padding = '14px 24px 14px 20px';
-
-    const priceWrapper = document.createElement('div');
-    priceWrapper.style.display = 'flex';
-    priceWrapper.style.flexDirection = 'column';
-    priceWrapper.style.gap = '2px';
-    priceWrapper.style.alignItems = 'flex-end';
-
-    const priceList = prices && prices.length ? prices : [0];
-    priceList.forEach((p, i) => {
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.className = 'cell-input price-input';
-      inp.style.textAlign = 'right';
-      inp.style.width = '110px';
-      inp.value = p > 0 ? formatVND(p) : (i === 0 ? '' : '0');
-      inp.placeholder = '0';
-      inp.addEventListener('input', () => {
-        const raw = inp.value.replace(/[^\d]/g, '');
-        const num = parseInt(raw) || 0;
-        if (raw) inp.value = formatVND(num);
-        recalcTotal();
-      });
-      priceWrapper.appendChild(inp);
-    });
-    priceTd.appendChild(priceWrapper);
-    tr.appendChild(priceTd);
-
-    // Delete btn
+    // 4. Delete btn
     const delTd = document.createElement('td');
     delTd.className = 'export-hide';
     delTd.style.verticalAlign = 'top';
@@ -713,6 +735,12 @@
     delBtn.title = 'Delete row';
     delBtn.onclick = () => { tr.remove(); recalcTotal(); };
     delTd.appendChild(delBtn);
+
+    // Lắp ghép các cột vào dòng theo đúng thứ tự
+    tr.appendChild(catTd);
+    tr.appendChild(descTd);
+    tr.appendChild(qtyTd);
+    tr.appendChild(priceTd);
     tr.appendChild(delTd);
 
     tbody.appendChild(tr);
@@ -736,7 +764,6 @@
     const hideEls = document.querySelectorAll('.export-hide');
     hideEls.forEach(el => el.style.visibility = 'hidden');
 
-    // Tắt tạm thời đổ bóng box-shadow để tránh Canvas bị lỗi ám màu/nhiễu màu
     const originalShadow = card.style.boxShadow;
     card.style.boxShadow = 'none';
 
@@ -744,9 +771,9 @@
 
     try {
       const canvas = await html2canvas(card, {
-        scale: 2.5, // Tăng độ nét
+        scale: 2.5,
         useCORS: true,
-        allowTaint: false, // Phải set false thì ảnh ngoại tuyến (CORS) mới không làm hư canvas
+        allowTaint: false,
         backgroundColor: '#0f4fd4',
         logging: false,
         windowWidth: card.scrollWidth,
@@ -762,7 +789,7 @@
             div.style.wordBreak = 'break-word';
             div.style.margin = '0';
             
-            // Xử lý giữ nguyên khoảng cách cho các tiêu đề để không bị dính vào nhau
+            // Xử lý giữ nguyên khoảng cách cho các tiêu đề
             if (el.classList.contains('inv-big-title')) { 
               div.style.marginBottom = '20px'; 
               div.style.display = 'block'; 
@@ -773,6 +800,11 @@
             }
             if (el.classList.contains('inv-subtitle')) {
               div.style.display = 'block'; 
+            }
+
+            // Đồng bộ chiều cao dòng lúc xuất file để không bị lệch hàng
+            if (el.tagName === 'TEXTAREA') {
+              div.style.lineHeight = '26px';
             }
 
             if(el.style.textAlign) { div.style.textAlign = el.style.textAlign; }
@@ -791,7 +823,6 @@
     } catch(e) {
       alert('Export failed: ' + e.message);
     } finally {
-      // Phục hồi lại giao diện sau khi xuất xong
       hideEls.forEach(el => el.style.visibility = '');
       card.style.boxShadow = originalShadow;
       overlay.classList.remove('show');
